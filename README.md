@@ -9,7 +9,6 @@
 - Downloads multiple episodes concurrently.
 - Supports batch downloading via a list of URLs.
 - Tracks download progress with a progress bar.
-- Supports downloading from alternative hosts if necessary.
 - Automatically creates a directory structure for organized storage.
 
 ## Directory Structure
