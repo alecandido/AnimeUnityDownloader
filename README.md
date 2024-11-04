@@ -51,7 +51,7 @@ To download a single anime, you can use the `anime_downloader.py` script.
 
 ### Usage
 
-Run the script followed by the anime URL you want download:
+Run the script followed by the anime URL you want to download:
 
 ```bash
 python3 anime_downloader.py <anime_url>
