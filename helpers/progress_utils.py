@@ -2,10 +2,9 @@
 This module provides utility functions for tracking download progress
 using the Rich library. It includes features for creating a progress bar
 and a formatted progress table specifically designed for monitoring
-the download status of anime episodes.
+the download status of current taks.
 """
 
-from rich.text import Text
 from rich.panel import Panel
 from rich.table import Table
 from rich.progress import (
@@ -16,7 +15,7 @@ from rich.progress import (
     TimeRemainingColumn
 )
 
-def create_progress_bar() -> Progress:
+def create_progress_bar():
     """
     Creates and returns a progress bar for tracking download progress.
 
@@ -32,27 +31,26 @@ def create_progress_bar() -> Progress:
         TimeRemainingColumn()
     )
 
-def create_progress_table(anime_name: str, job_progress: Progress) -> Table:
+def create_progress_table(title, job_progress):
     """
     Creates a formatted progress table for tracking the download status of
-    anime episodes.
+    the current task.
 
     Parameters:
-        anime_name (str): The name of the anime for which the progress is being
-                          displayed.
+        title (str): The name of the task for which the progress is being
+                     displayed.
         job_progress (Progress): An instance of a progress tracking object that
-                                 manages the download progress of episodes.
+                                 manages the download progress.
 
     Returns:
         Table: A rich Table object containing the progress panel for the
-               specified anime.
+               specified task.
     """
-    title_text = Text(anime_name, style="bold")
     progress_table = Table.grid()
     progress_table.add_row(
         Panel.fit(
             job_progress,
-            title=title_text,
+            title=f"[b]{title}",
             border_style="red",
             padding=(1, 1)
         )
