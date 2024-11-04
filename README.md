@@ -1,6 +1,6 @@
 # AnimeUnity Downloader
 
-> A Python-based tool to download anime series from AnimeUnity, tracking progress for each episode. It extracts video URLs and handles downloads efficiently.
+> A Python-based tool for downloading anime series from AnimeUnity, featuring progress tracking for each episode. It efficiently extracts video URLs and manages downloads.
 
 ![Screenshot](https://github.com/Lysagxra/AnimeUnityDownloader/blob/660079e23bc16e8b1996b463e213aecbb1a56294/misc/Screenshot.png)
 
@@ -16,11 +16,12 @@
 ```
 project-root/
 ├── helpers/
-│ ├── anime_utils.py      # Python script containing formatting utility for AnimeUnity
-│ └── progress_utils.py   # Python script containing progress utility
-├── anime_downloader.py   # Module to download the anime episodes
-├── main.py               # Main Python script to run the downloader
-└── URLs.txt              # Text file containing album URLs
+│ ├── download_utils.py  # Script containing utilities for managing the download process
+│ ├── format_utils.py    # Script containing formatting utilities
+│ └── progress_utils.py  # Script containing utilities for tracking download progress
+├── anime_downloader.py  # Module for downloading anime episodes
+├── main.py              # Main script to run the downloader
+└── URLs.txt             # Text file containing anime URLs
 ```
 
 ## Dependencies
@@ -53,7 +54,7 @@ To download a single anime, you can use the `anime_downloader.py` script.
 Run the script followed by the anime URL you want download:
 
 ```bash
-python3 anime_downloader.py <anime_page_url>
+python3 anime_downloader.py <anime_url>
 ```
 
 Example
