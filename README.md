@@ -16,8 +16,8 @@
 ```
 project-root/
 ├── helpers/
+│ ├── anime_utils.py     # Script containing formatting utilities
 │ ├── download_utils.py  # Script containing utilities for managing the download process
-│ ├── format_utils.py    # Script containing formatting utilities
 │ └── progress_utils.py  # Script containing utilities for tracking download progress
 ├── anime_downloader.py  # Module for downloading anime episodes
 ├── main.py              # Main script to run the downloader
