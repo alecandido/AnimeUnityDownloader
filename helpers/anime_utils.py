@@ -4,6 +4,8 @@ and constructing episode URLs for downloading. It utilizes BeautifulSoup for
 parsing HTML content and includes error handling for common extraction issues.
 """
 
+import json
+
 def extract_anime_name(soup):
     """
     Extracts the anime name from the provided BeautifulSoup object.
@@ -47,12 +49,16 @@ def get_episode_ids(soup):
         IndexError: If the expected structure of the string is not found.
     """
     try:
-        episodes_list = [
-            link['episodes'] for link in soup.find_all('video-player')
-        ]
-        all_episodes = ''.join(episodes_list)
-        id_parts = all_episodes.split('"id":')[1:]
-        return list(map(lambda item: item.split(',')[0], id_parts))
+        episodes_data = soup.find('video-player')['episodes']
+        episodes = json.loads(episodes_data)
+        return [episode['id'] for episode in episodes]
+
+#        episodes_list = [
+#            link['episodes'] for link in soup.find_all('video-player')
+#        ]
+#        all_episodes = ''.join(episodes_list)
+#        id_parts = all_episodes.split('"id":')[1:]
+#        return list(map(lambda item: item.split(',')[0], id_parts))
 
     except AttributeError as attr_err:
         return AttributeError(f"Error accessing tag attributes: {attr_err}")

@@ -7,6 +7,7 @@ import re
 from urllib.parse import unquote
 from concurrent.futures import ThreadPoolExecutor
 
+MAX_WORKERS = 3
 TASK_COLOR = 'cyan'
 
 KB = 1024
@@ -25,7 +26,7 @@ def remove_special_characters(input_string):
     """
     return re.sub(r'[^a-zA-Z0-9_.-]', '', input_string)
 
-def get_episode_file_name(download_link):
+def get_episode_filename(download_link):
     """
     Extract the file name from the provided episode download link.
 
@@ -37,8 +38,8 @@ def get_episode_file_name(download_link):
     """
     if download_link:
         try:
-            file_name = unquote(download_link.split('=')[-1]) # Original name
-            return remove_special_characters(file_name)       # Cleaned name
+            filename = unquote(download_link.split('=')[-1])  # Original name
+            return remove_special_characters(filename)        # Cleaned name
 
         except IndexError as indx_err:
             print(f"Error while extracting the file name: {indx_err}")
@@ -115,7 +116,7 @@ def manage_running_tasks(futures, job_progress):
                 task = futures.pop(future)
                 job_progress.update(task, visible=True)
 
-def run_in_parallel(func, items, job_progress, *args, max_workers=3):
+def run_in_parallel(func, items, job_progress, *args):
     """
     Execute a function in parallel for a list of items, updating progress in a
     job tracker.
@@ -127,13 +128,11 @@ def run_in_parallel(func, items, job_progress, *args, max_workers=3):
         job_progress: An object responsible for managing and displaying the
                       progress of tasks.
         *args: Additional positional arguments to be passed to the `func`.
-        max_workers (int, optional): The maximum number of threads to use for
-                                     concurrent processing. Defaults to 3.
     """
     num_items = len(items)
     futures = {}
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         overall_task = job_progress.add_task(
             f"[{TASK_COLOR}]Progress", total=num_items, visible=True
         )
