@@ -34,16 +34,22 @@ project-root/
 ## Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/Lysagxra/AnimeUnityDownloader.git
+
+```bash
+git clone https://github.com/Lysagxra/AnimeUnityDownloader.git
+```
 
 2. Navigate to the project directory:
-   ```bash
-   cd AnimeUnityDownloader
 
-3. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
+```bash
+cd AnimeUnityDownloader
+```
+
+4. Install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
 
 ## Single Anime Download
 
