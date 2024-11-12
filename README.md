@@ -45,7 +45,7 @@ git clone https://github.com/Lysagxra/AnimeUnityDownloader.git
 cd AnimeUnityDownloader
 ```
 
-4. Install the required dependencies:
+3. Install the required dependencies:
 
 ```bash
 pip install -r requirements.txt
