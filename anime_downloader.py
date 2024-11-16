@@ -13,12 +13,15 @@ Usage:
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
-from bs4 import BeautifulSoup
 from rich.live import Live
 
 from helpers.progress_utils import create_progress_bar, create_progress_table
+from helpers.general_utils import (
+    fetch_page, create_download_directory, clear_terminal
+)
 from helpers.download_utils import (
     get_episode_filename, save_file_with_progress, run_in_parallel
 )
@@ -28,36 +31,43 @@ from helpers.anime_utils import (
 
 SCRIPT_NAME = os.path.basename(__file__)
 DOWNLOAD_FOLDER = "Downloads"
+
 TIMEOUT = 10
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) "
+        "Gecko/20100101 Firefox/117.0"
+    ),
+    "Connection": "keep-alive"
+}
 
 def get_embed_url(episode_url, tag, attribute):
     """
-    Retrieves the embed URL from the given episode URL.
+    Retrieves the embed URL from the given episode URL by parsing the specified
+    HTML tag and attribute.
 
     Args:
-        episode_url (str): The URL of the episode page.
-        tag (str): The HTML tag to search for.
-        attribute (str): The attribute of the tag containing the embed URL.
+        episode_url (str): The URL of the episode page to fetch.
+        tag (str): The HTML tag to search for within the page.
+        attribute (str): The attribute of the tag that contains the embed URL.
 
     Returns:
-        str: The retrieved embed URL.
+        str: The retrieved embed URL if found.
 
     Raises:
-        requests.RequestException: If there is an issue with the HTTP request.
-        AttributeError: If there is an issue accessing the attribute of the tag.
-        KeyError: If the expected attribute is not found in the tag.
+        requests.RequestException: If an error occurs while making the HTTP 
+                                   request.
+        AttributeError: If the specified tag is not found in the HTML page.
+        KeyError: If the specified attribute is not found in the tag.
     """
     try:
-        response = requests.get(episode_url, timeout=TIMEOUT)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        element = soup.find(tag)
+        soup = fetch_page(episode_url)
 
+        element = soup.find(tag)
         if element is None:
             raise AttributeError(f"Tag '{tag}' not found")
 
         embed_url = element.get(attribute)
-
         if embed_url is None:
             raise KeyError(f"Attribute '{attribute}' not found in tag '{tag}'")
 
@@ -66,26 +76,38 @@ def get_embed_url(episode_url, tag, attribute):
     except requests.RequestException as req_err:
         return print(f"HTTP request error: {req_err}")
 
-    except AttributeError as attr_err:
-        return AttributeError(f"Error accessing tag attributes: {attr_err}")
-
-    except KeyError as key_err:
-        return KeyError(f"Expected attribute not found: {key_err}")
-
-def get_embed_urls(episodes_urls):
+def get_embed_urls(episode_urls):
     """
-    Constructs a list of embed URLs for a given list of episode URLs.
+    Retrieves embed URLs from a list of episode URLs by making concurrent HTTP
+    requests.
 
     Args:
-        episodes_urls (list of str): A list of episode URLs.
+        episode_urls (list of str): A list of episode URLs to extract the embed
+                                    URLs from.
 
     Returns:
-        list of str: A list of embed URLs extracted from the episode URLs.
-    """
-    def extract_embed_url(episode_url):
-        return get_embed_url(episode_url, 'video-player', 'embed_url')
+        list of str: A list of embed URLs extracted from the provided episode
+                     URLs.
 
-    return list(map(extract_embed_url, episodes_urls))
+    Raises:
+        requests.RequestException: If an error occurs while making any HTTP
+                                   request.
+    """
+    embed_urls = []
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {
+            executor.submit(
+                get_embed_url, episode_url, 'video-player', 'embed_url'
+            ): episode_url for episode_url in episode_urls
+        }
+
+        for future in as_completed(futures):
+            embed_url = future.result()
+            if embed_url:
+                embed_urls.append(embed_url)
+
+    return embed_urls
 
 def download_episode(download_link, download_path, task_info, retries=3):
     """
@@ -109,7 +131,9 @@ def download_episode(download_link, download_path, task_info, retries=3):
     """
     for attempt in range(retries):
         try:
-            response = requests.get(download_link, stream=True, timeout=TIMEOUT)
+            response = requests.get(
+                download_link, stream=True, headers=HEADERS, timeout=TIMEOUT
+            )
             response.raise_for_status()
 
             filename = get_episode_filename(download_link)
@@ -122,7 +146,7 @@ def download_episode(download_link, download_path, task_info, retries=3):
                 f"HTTP request failed: {req_err}\n"
                 f"Retrying in a moment... ({attempt + 1}/{retries})"
             )
-            time.sleep(20)
+            time.sleep(30)
 
 def process_embed_url(embed_url, download_path, task_info):
     """
@@ -136,36 +160,34 @@ def process_embed_url(embed_url, download_path, task_info):
     """
     def extract_download_link(text, match="window.downloadUrl = "):
         """
-    Extracts a download link from a JavaScript text by searching for a specific
-    match pattern.
+        Extracts a download link from a JavaScript text by searching for a
+        specific match pattern.
 
-    Args:
-        text (str): The text to search for the download URL.
-        match (str, optional): The pattern to search for in the text.
-                               Defaults to `window.downloadUrl = `.
+        Args:
+            text (str): The text to search for the download URL.
+            match (str, optional): The pattern to search for in the text.
+                                   Defaults to `window.downloadUrl = `.
 
-    Returns:
-        str: The extracted download URL if the pattern is found;
-             otherwise, `None`.
+        Returns:
+            str: The extracted download URL if the pattern is found;
+                 otherwise, `None`.
 
-    Raises:
-        IndexError: If the expected format of the text does not match the
-                    pattern or the URL cannot be extracted.
-    """
+        Raises:
+            IndexError: If the expected format of the text does not match the
+                        pattern or the URL cannot be extracted.
+        """
         if match in text:
             try:
                 return text.split("'")[-2]
 
             except IndexError as indx_err:
                 raise IndexError(
-                    'Error extracting the download link'
+                    f"Error extracting the download link for {embed_url}"
                 ) from indx_err
 
         return None
 
-    response = requests.get(embed_url, timeout=TIMEOUT)
-    soup = BeautifulSoup(response.text, 'html.parser')
-
+    soup = fetch_page(embed_url)
     script_items = soup.find_all('script')
     texts = [item.text for item in script_items]
 
@@ -194,52 +216,6 @@ def download_anime(anime_name, video_urls, download_path):
             process_embed_url, video_urls, job_progress, download_path
         )
 
-def create_download_directory(anime_name):
-    """
-    Creates a directory for downloads if it doesn't exist.
-
-    Args:
-        anime_name (str): The name of the anime used to create the download 
-                          directory.
-
-    Returns:
-        str: The path to the created download directory.
-
-    Raises:
-        OSError: If there is an error creating the directory.
-    """
-    download_path = os.path.join(DOWNLOAD_FOLDER, anime_name)
-
-    try:
-        os.makedirs(download_path, exist_ok=True)
-        return download_path
-
-    except OSError as os_err:
-        print(f"Error creating directory: {os_err}")
-        sys.exit(1)
-
-def fetch_anime_page(url):
-    """
-    Fetches the anime page and returns its BeautifulSoup object.
-
-    Args:
-        url (str): The URL of the anime page.
-
-    Returns:
-        BeautifulSoup: The BeautifulSoup object containing the HTML.
-
-    Raises:
-        requests.RequestException: If there is an error with the HTTP request.
-    """
-    try:
-        response = requests.get(url, timeout=TIMEOUT)
-        response.raise_for_status()
-        return BeautifulSoup(response.text, 'html.parser')
-
-    except requests.RequestException as req_err:
-        print(f"Error fetching the anime page: {req_err}")
-        sys.exit(1)
-
 def process_anime_download(url):
     """
     Processes the download of an anime from the specified URL.
@@ -251,7 +227,7 @@ def process_anime_download(url):
         ValueError: If there is an issue with extracting data from 
                     the anime page.
     """
-    soup = fetch_anime_page(url)
+    soup = fetch_page(url)
 
     try:
         anime_name = extract_anime_name(soup)
@@ -259,25 +235,11 @@ def process_anime_download(url):
 
         episodes_ids = get_episode_ids(soup)
         episodes_urls = generate_episode_urls(url, episodes_ids)
-
         embed_urls = get_embed_urls(episodes_urls)
         download_anime(anime_name, embed_urls, download_path)
 
     except ValueError as val_err:
         print(f"Value error: {val_err}")
-
-def clear_terminal():
-    """
-    Clears the terminal screen based on the operating system.
-    """
-    commands = {
-        'nt': 'cls',      # Windows
-        'posix': 'clear'  # macOS and Linux
-    }
-
-    command = commands.get(os.name)
-    if command:
-        os.system(command)
 
 def main():
     """
