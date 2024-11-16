@@ -57,17 +57,16 @@ def get_chunk_size(file_size):
         int: The optimal chunk size in bytes.
     """
     thresholds = [
-        (50 * MB, 4 * KB),    # Less than 50 MB
-        (100 * MB, 8 * KB),   # 50 MB to 100 MB
-        (250 * MB, 16 * KB),  # 100 MB to 250 MB
-        (500 * MB, 32 * KB)   # 250 MB to 500 MB
+        (50 * MB, 256 * KB),   # Less than 50 MB
+        (100 * MB, 512 * KB),  # 50 MB to 100 MB
+        (250 * MB, 2 * MB),    # 100 MB to 250 MB
     ]
 
     for threshold, chunk_size in thresholds:
         if file_size < threshold:
             return chunk_size
 
-    return 64 * KB
+    return 4 * MB
 
 def save_file_with_progress(response, final_path, task_info):
     """

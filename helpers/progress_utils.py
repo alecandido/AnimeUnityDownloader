@@ -43,7 +43,7 @@ def create_progress_table(title, job_progress):
                                  manages the download progress.
 
     Returns:
-        Table: A rich Table object containing the progress panel for the
+        Table: A Rich Table object containing the progress panel for the
                specified task.
     """
     progress_table = Table.grid()
