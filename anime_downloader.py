@@ -213,16 +213,14 @@ def download_anime(anime_name, video_urls, download_path):
             process_embed_url, video_urls, job_progress, download_path
         )
 
-def process_anime_download(url, start_episode=None, end_episode=None):
+def process_anime_download(url, start_episode, end_episode):
     """
     Processes the download of an anime from the specified URL.
 
     Args:
         url (str): The URL of the anime page to process.
-        start_episode (int, optional): The starting episode number. Defaults to
-                                       None.
-        end_episode (int, optional): The ending episode number. Defaults to
-                                     None.
+        start_episode (int): The starting episode number.
+        end_episode (int): The ending episode number.
 
     Raises:
         ValueError: If there is an issue with extracting data from 
@@ -234,10 +232,12 @@ def process_anime_download(url, start_episode=None, end_episode=None):
         anime_name = extract_anime_name(soup)
         download_path = create_download_directory(anime_name)
 
-        episode_ids = get_episode_ids(soup)
+        episode_ids = get_episode_ids(
+            soup,
+            start_episode=start_episode,
+            end_episode=end_episode
+        )
         episode_urls = generate_episode_urls(url, episode_ids)
-        if start_episode:
-            episode_urls = episode_urls[start_episode-1:end_episode]
 
         embed_urls = get_embed_urls(episode_urls)
         download_anime(anime_name, embed_urls, download_path)
@@ -271,13 +271,10 @@ def main():
     Command-line Arguments:
         <anime_url> (str): The URL of the anime page to download episodes from.
     """
+    clear_terminal()
     parser = setup_parser()
     args = parser.parse_args()
-
-    clear_terminal()
-    process_anime_download(
-        args.url, start_episode=args.start, end_episode=args.end
-    )
+    process_anime_download(args.url, args.start, args.end)
 
 if __name__ == '__main__':
     main()
