@@ -13,6 +13,7 @@ Usage:
 import os
 import sys
 import time
+import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
@@ -29,10 +30,6 @@ from helpers.anime_utils import (
     extract_anime_name, get_episode_ids, generate_episode_urls
 )
 
-SCRIPT_NAME = os.path.basename(__file__)
-DOWNLOAD_FOLDER = "Downloads"
-
-TIMEOUT = 10
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) "
@@ -132,7 +129,7 @@ def download_episode(download_link, download_path, task_info, retries=3):
     for attempt in range(retries):
         try:
             response = requests.get(
-                download_link, stream=True, headers=HEADERS, timeout=TIMEOUT
+                download_link, stream=True, headers=HEADERS, timeout=10
             )
             response.raise_for_status()
 
@@ -216,12 +213,16 @@ def download_anime(anime_name, video_urls, download_path):
             process_embed_url, video_urls, job_progress, download_path
         )
 
-def process_anime_download(url):
+def process_anime_download(url, start_episode=None, end_episode=None):
     """
     Processes the download of an anime from the specified URL.
 
     Args:
         url (str): The URL of the anime page to process.
+        start_episode (int, optional): The starting episode number. Defaults to
+                                       None.
+        end_episode (int, optional): The ending episode number. Defaults to
+                                     None.
 
     Raises:
         ValueError: If there is an issue with extracting data from 
@@ -233,13 +234,35 @@ def process_anime_download(url):
         anime_name = extract_anime_name(soup)
         download_path = create_download_directory(anime_name)
 
-        episodes_ids = get_episode_ids(soup)
-        episodes_urls = generate_episode_urls(url, episodes_ids)
-        embed_urls = get_embed_urls(episodes_urls)
+        episode_ids = get_episode_ids(soup)
+        episode_urls = generate_episode_urls(url, episode_ids)
+        if start_episode:
+            episode_urls = episode_urls[start_episode-1:end_episode]
+
+        embed_urls = get_embed_urls(episode_urls)
         download_anime(anime_name, embed_urls, download_path)
 
     except ValueError as val_err:
         print(f"Value error: {val_err}")
+
+def setup_parser():
+    """
+    Set up the argument parser for the anime download script.
+
+    Returns:
+        argparse.ArgumentParser: The configured argument parser instance.
+    """
+    parser = argparse.ArgumentParser(
+        description="Download anime episodes from a given URL."
+    )
+    parser.add_argument('url', help="The URL of the Anime series to download.")
+    parser.add_argument(
+        '--start', type=int, default=None, help="The starting episode number."
+    )
+    parser.add_argument(
+        '--end', type=int, default=None, help="The ending episode number."
+    )
+    return parser
 
 def main():
     """
@@ -248,13 +271,13 @@ def main():
     Command-line Arguments:
         <anime_url> (str): The URL of the anime page to download episodes from.
     """
-    if len(sys.argv) != 2:
-        print(f"Usage: python3 {SCRIPT_NAME} <anime_url>")
-        sys.exit(1)
+    parser = setup_parser()
+    args = parser.parse_args()
 
     clear_terminal()
-    url = sys.argv[1]
-    process_anime_download(url)
+    process_anime_download(
+        args.url, start_episode=args.start, end_episode=args.end
+    )
 
 if __name__ == '__main__':
     main()
