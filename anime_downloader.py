@@ -11,7 +11,6 @@ Usage:
 """
 
 import os
-import sys
 import time
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -213,14 +212,16 @@ def download_anime(anime_name, video_urls, download_path):
             process_embed_url, video_urls, job_progress, download_path
         )
 
-def process_anime_download(url, start_episode, end_episode):
+def process_anime_download(url, start_episode=None, end_episode=None):
     """
     Processes the download of an anime from the specified URL.
 
     Args:
         url (str): The URL of the anime page to process.
-        start_episode (int): The starting episode number.
-        end_episode (int): The ending episode number.
+        start_episode (int, optional): The starting episode number. Defaults to
+                                       None.
+        end_episode (int, optional): The ending episode number. Defaults to
+                                     None.
 
     Raises:
         ValueError: If there is an issue with extracting data from 
