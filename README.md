@@ -8,6 +8,7 @@
 
 - Downloads multiple episodes concurrently.
 - Supports batch downloading via a list of URLs.
+- Supports downloading a specified range of episodes.
 - Tracks download progress with a progress bar.
 - Automatically creates a directory structure for organized storage.
 
@@ -62,14 +63,30 @@ To download a single anime, you can use the `anime_downloader.py` script.
 Run the script followed by the anime URL you want to download:
 
 ```bash
-python3 anime_downloader.py <anime_url>
+python3 anime_downloader.py <anime_url> [--start <start_episode>] [--end <end_episode>]
 ```
 
-### Example
+- `<anime_url>`: The URL of the anime series.
+- `--start <start_episode>`: The starting episode number (optional).
+- `--end <end_episode>`: The ending episode number (optional).
 
+### Examples
+
+To download all episodes:
 ```bash
 python3 anime_downloader.py https://www.animeunity.to/anime/1517-yuru-yuri
 ```
+
+To download a specific range of episodes (e.g., episodes 5 to 10):
+```bash
+python3 anime_downloader.py https://www.animeunity.to/anime/1517-yuru-yuri --start 5 --end 10
+```
+
+To download episodes starting from a specific episode
+```bash
+python3 anime_downloader.py https://www.animeunity.to/anime/1517-yuru-yuri --start 5
+```
+In this case, the script will download all episodes starting from the `--start` episode to the last episode.
 
 ## Batch Download
 
