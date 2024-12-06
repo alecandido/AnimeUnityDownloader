@@ -33,15 +33,21 @@ def extract_anime_name(soup):
     except AttributeError as attr_err:
         return AttributeError(f"Error extracting anime name: {attr_err}")
 
-def get_episode_ids(soup):
+def get_episode_ids(soup, start_episode=None, end_episode=None):
     """
-    Extracts episode IDs from HTML soup.
+    Extracts episode IDs from HTML soup, optionally limited to a specified
+    range of episodes.
 
     Args:
         soup (BeautifulSoup): The BeautifulSoup object containing HTML.
+        start_episode (int, optional): The starting episode number (inclusive).
+                                       Defaults to None.
+        end_episode (int, optional): The ending episode number (exclusive).
+                                     Defaults to None.
 
     Returns:
-        list: A list of extracted episode IDs.
+        list: A list of extracted episode IDs. If no range is provided, all
+              episode IDs are returned.
 
     Raises:
         AttributeError: If there is an issue accessing the attribute of the
@@ -51,7 +57,12 @@ def get_episode_ids(soup):
     try:
         episodes_data = soup.find('video-player')['episodes']
         episodes = json.loads(episodes_data)
-        return [episode['id'] for episode in episodes]
+
+        # Determine the correct slice based on start_episode and end_episode
+        start_index = start_episode - 1 if start_episode else 0
+        end_index = end_episode if end_episode else len(episodes)
+
+        return [episode['id'] for episode in episodes[start_index:end_index]]
 
     except AttributeError as attr_err:
         return AttributeError(f"Error accessing tag attributes: {attr_err}")
