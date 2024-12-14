@@ -44,24 +44,24 @@ def fetch_page(url, timeout=10):
         print(f"Error fetching page {url}: {req_err}")
         sys.exit(1)
 
-def sanitize_filename(filename):
+def sanitize_directory_name(directory_name):
     """
-    Sanitize a given filename by replacing invalid characters with underscores.
-    Handles the invalid characters specific to Windows, macOS, and Linux.
+    Sanitize a given directory name by replacing invalid characters with
+    underscores. Handles the invalid characters specific to Windows, macOS,
+    and Linux.
 
     Args:
-        filename (str): The original filename to sanitize.
+        directory_name (str): The original directory name to sanitize.
 
     Returns:
-        str: The sanitized filename with invalid characters replaced by
-             underscores.
+        str: The sanitized directory name.
     """
     invalid_chars_dict = {
         'nt': r'[\\/:*?"<>|]',  # Windows
         'posix': r'[/:]'        # macOS and Linux
     }
     invalid_chars = invalid_chars_dict.get(os.name)
-    return re.sub(invalid_chars, '_', filename)
+    return re.sub(invalid_chars, '_', directory_name)
 
 def create_download_directory(directory_name):
     """
@@ -78,7 +78,7 @@ def create_download_directory(directory_name):
     """
     download_path = os.path.join(
         DOWNLOAD_FOLDER,
-        sanitize_filename(directory_name)
+        sanitize_directory_name(directory_name)
     )
 
     try:
