@@ -94,7 +94,7 @@ In this case, the script will download all episodes starting from the `--start` 
 
 1. Create a `URLs.txt` file in the project root and list the anime URLs you want to download.
 
-Example of `URLs.txt`
+- Example of `URLs.txt`:
 
 ```
 https://www.animeunity.to/anime/1517-yuru-yuri
