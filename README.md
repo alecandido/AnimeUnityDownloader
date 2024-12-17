@@ -102,6 +102,9 @@ https://www.animeunity.to/anime/3871-chainsaw-man
 https://www.animeunity.to/anime/2598-made-in-abyss
 ```
 
+- Ensure that each URL is on its own line without any extra spaces.
+- You can add as many URLs as you need, following the same format.
+
 2. Run the main script via the command line:
 
 ```bash
