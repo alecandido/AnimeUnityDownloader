@@ -33,6 +33,8 @@ project-root/
 - `requests` - for HTTP requests
 - `BeautifulSoup` (bs4) - for HTML parsing
 - `rich` - for progress display in terminal
+- `fake_useragent` - for generating fake user agents for web scraping
+- `httpx` - for making asynchronous HTTP requests
 
 ## Installation
 
