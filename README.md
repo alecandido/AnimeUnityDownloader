@@ -79,12 +79,12 @@ python3 anime_downloader.py https://www.animeunity.to/anime/1517-yuru-yuri
 
 To download a specific range of episodes (e.g., episodes 5 to 10):
 ```bash
-python3 anime_downloader.py https://www.animeunity.to/anime/1517-yuru-yuri --start 5 --end 10
+python3 anime_downloader.py https://www.animeunity.so/anime/1517-yuru-yuri --start 5 --end 10
 ```
 
 To download episodes starting from a specific episode:
 ```bash
-python3 anime_downloader.py https://www.animeunity.to/anime/1517-yuru-yuri --start 5
+python3 anime_downloader.py https://www.animeunity.so/anime/1517-yuru-yuri --start 5
 ```
 In this case, the script will download all episodes starting from the `--start` episode to the last episode.
 
@@ -97,9 +97,9 @@ In this case, the script will download all episodes starting from the `--start` 
 - Example of `URLs.txt`:
 
 ```
-https://www.animeunity.to/anime/1517-yuru-yuri
-https://www.animeunity.to/anime/3871-chainsaw-man
-https://www.animeunity.to/anime/2598-made-in-abyss
+https://www.animeunity.so/anime/1517-yuru-yuri
+https://www.animeunity.so/anime/3871-chainsaw-man
+https://www.animeunity.so/anime/2598-made-in-abyss
 ```
 
 - Ensure that each URL is on its own line without any extra spaces.
