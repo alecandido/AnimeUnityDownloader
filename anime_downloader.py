@@ -13,11 +13,18 @@ Usage:
 import os
 import time
 import argparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import asyncio
 
 import requests
 from rich.live import Live
 
+from helpers.crawler.crawler_utils import(
+    collect_video_urls, extract_download_link
+)
+from helpers.crawler.anime_utils import (
+    extract_host_domain, extract_anime_name, get_episode_ids,
+    generate_episode_embed_urls
+)
 from helpers.progress_utils import create_progress_bar, create_progress_table
 from helpers.general_utils import (
     fetch_page, create_download_directory, clear_terminal
@@ -25,87 +32,11 @@ from helpers.general_utils import (
 from helpers.download_utils import (
     get_episode_filename, save_file_with_progress, run_in_parallel
 )
-from helpers.anime_utils import (
-    extract_anime_name, get_episode_ids, generate_episode_urls
-)
+from helpers.config import prepare_headers
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) "
-        "Gecko/20100101 Firefox/117.0"
-    ),
-    "Connection": "keep-alive"
-}
+HEADERS = prepare_headers()
 
-def get_embed_url(episode_url, tag, attribute):
-    """
-    Retrieves the embed URL from the given episode URL by parsing the specified
-    HTML tag and attribute.
-
-    Args:
-        episode_url (str): The URL of the episode page to fetch.
-        tag (str): The HTML tag to search for within the page.
-        attribute (str): The attribute of the tag that contains the embed URL.
-
-    Returns:
-        str: The retrieved embed URL if found.
-
-    Raises:
-        requests.RequestException: If an error occurs while making the HTTP 
-                                   request.
-        AttributeError: If the specified tag is not found in the HTML page.
-        KeyError: If the specified attribute is not found in the tag.
-    """
-    try:
-        soup = fetch_page(episode_url)
-
-        element = soup.find(tag)
-        if element is None:
-            raise AttributeError(f"Tag '{tag}' not found")
-
-        embed_url = element.get(attribute)
-        if embed_url is None:
-            raise KeyError(f"Attribute '{attribute}' not found in tag '{tag}'")
-
-        return embed_url
-
-    except requests.RequestException as req_err:
-        return print(f"HTTP request error: {req_err}")
-
-def get_embed_urls(episode_urls):
-    """
-    Retrieves embed URLs from a list of episode URLs by making concurrent HTTP
-    requests.
-
-    Args:
-        episode_urls (list of str): A list of episode URLs to extract the embed
-                                    URLs from.
-
-    Returns:
-        list of str: A list of embed URLs extracted from the provided episode
-                     URLs.
-
-    Raises:
-        requests.RequestException: If an error occurs while making any HTTP
-                                   request.
-    """
-    embed_urls = []
-
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = {
-            executor.submit(
-                get_embed_url, episode_url, 'video-player', 'embed_url'
-            ): episode_url for episode_url in episode_urls
-        }
-
-        for future in as_completed(futures):
-            embed_url = future.result()
-            if embed_url:
-                embed_urls.append(embed_url)
-
-    return embed_urls
-
-def download_episode(download_link, download_path, task_info, retries=3):
+def download_episode(download_link, download_path, task_info, timeout=10, retries=4):
     """
     Downloads an episode from the specified link and provides real-time
     progress updates.
@@ -128,7 +59,10 @@ def download_episode(download_link, download_path, task_info, retries=3):
     for attempt in range(retries):
         try:
             response = requests.get(
-                download_link, stream=True, headers=HEADERS, timeout=10
+                download_link,
+                stream=True,
+                headers=HEADERS,
+                timeout=timeout
             )
             response.raise_for_status()
 
@@ -137,12 +71,13 @@ def download_episode(download_link, download_path, task_info, retries=3):
             save_file_with_progress(response, final_path, task_info)
             break
 
-        except requests.RequestException as req_err:
-            print(
-                f"HTTP request failed: {req_err}\n"
-                f"Retrying in a moment... ({attempt + 1}/{retries})"
-            )
-            time.sleep(30)
+        except requests.RequestException:
+            if attempt < retries - 1:
+#                print(
+#                    f"HTTP request failed: {req_err}. "
+#                    f"Retrying in a moment... ({attempt + 1}/{retries})"
+#                )
+                time.sleep(30)
 
 def process_embed_url(embed_url, download_path, task_info):
     """
@@ -154,41 +89,12 @@ def process_embed_url(embed_url, download_path, task_info):
         download_path (str): The path to save the downloaded episodes.
         task_info (tuple): A tuple containing progress tracking information.
     """
-    def extract_download_link(text, match="window.downloadUrl = "):
-        """
-        Extracts a download link from a JavaScript text by searching for a
-        specific match pattern.
-
-        Args:
-            text (str): The text to search for the download URL.
-            match (str, optional): The pattern to search for in the text.
-                                   Defaults to `window.downloadUrl = `.
-
-        Returns:
-            str: The extracted download URL if the pattern is found;
-                 otherwise, `None`.
-
-        Raises:
-            IndexError: If the expected format of the text does not match the
-                        pattern or the URL cannot be extracted.
-        """
-        if match in text:
-            try:
-                return text.split("'")[-2]
-
-            except IndexError as indx_err:
-                raise IndexError(
-                    f"Error extracting the download link for {embed_url}"
-                ) from indx_err
-
-        return None
-
     soup = fetch_page(embed_url)
     script_items = soup.find_all('script')
     texts = [item.text for item in script_items]
 
     for text in texts:
-        download_link = extract_download_link(text)
+        download_link = extract_download_link(text, embed_url)
         if download_link:
             download_episode(download_link, download_path, task_info)
 
@@ -212,7 +118,7 @@ def download_anime(anime_name, video_urls, download_path):
             process_embed_url, video_urls, job_progress, download_path
         )
 
-def process_anime_download(url, start_episode=None, end_episode=None):
+async def process_anime_download(url, start_episode=None, end_episode=None):
     """
     Processes the download of an anime from the specified URL.
 
@@ -227,21 +133,22 @@ def process_anime_download(url, start_episode=None, end_episode=None):
         ValueError: If there is an issue with extracting data from 
                     the anime page.
     """
+    host_domain = extract_host_domain(url)
     soup = fetch_page(url)
 
     try:
         anime_name = extract_anime_name(soup)
         download_path = create_download_directory(anime_name)
 
-        episode_ids = get_episode_ids(
-            soup,
+        episode_ids = await get_episode_ids(
+            url,
             start_episode=start_episode,
             end_episode=end_episode
         )
-        episode_urls = generate_episode_urls(url, episode_ids)
+        embed_urls = generate_episode_embed_urls(host_domain, episode_ids)
 
-        embed_urls = get_embed_urls(episode_urls)
-        download_anime(anime_name, embed_urls, download_path)
+        video_urls = await collect_video_urls(embed_urls)
+        download_anime(anime_name, video_urls, download_path)
 
     except ValueError as val_err:
         print(f"Value error: {val_err}")
@@ -265,7 +172,7 @@ def setup_parser():
     )
     return parser
 
-def main():
+async def main():
     """
     Main function to download anime episodes from a given AnimeUnity URL.
 
@@ -275,7 +182,11 @@ def main():
     clear_terminal()
     parser = setup_parser()
     args = parser.parse_args()
-    process_anime_download(args.url, args.start, args.end)
+    await process_anime_download(
+        args.url,
+        start_episode=args.start,
+        end_episode=args.end
+    )
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
