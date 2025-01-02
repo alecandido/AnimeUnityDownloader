@@ -8,13 +8,15 @@ Usage:
     content, and clear the URL list upon completion.
 """
 
+import asyncio
+
 from helpers.file_utils import read_file, write_file
 from helpers.general_utils import clear_terminal
+from helpers.config import FILE
+
 from anime_downloader import process_anime_download
 
-FILE = 'URLs.txt'
-
-def process_urls(urls):
+async def process_urls(urls):
     """
     Validates and downloads items for a list of URLs.
 
@@ -22,9 +24,9 @@ def process_urls(urls):
         urls (list): A list of URLs to process.
     """
     for url in urls:
-        process_anime_download(url)
+        await process_anime_download(url)
 
-def main():
+async def main():
     """
     Main function to execute the script.
 
@@ -32,8 +34,8 @@ def main():
     """
     clear_terminal()
     urls = read_file(FILE)
-    process_urls(urls)
+    await process_urls(urls)
     write_file(FILE)
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
