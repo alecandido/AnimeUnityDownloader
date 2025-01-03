@@ -76,7 +76,7 @@ python3 anime_downloader.py <anime_url> [--start <start_episode>] [--end <end_ep
 
 To download all episodes:
 ```bash
-python3 anime_downloader.py https://www.animeunity.to/anime/1517-yuru-yuri
+python3 anime_downloader.py https://www.animeunity.so/anime/1517-yuru-yuri
 ```
 
 To download a specific range of episodes (e.g., episodes 5 to 10):
