@@ -19,18 +19,29 @@ import requests
 from rich.live import Live
 
 from helpers.crawler.crawler_utils import(
-    collect_video_urls, extract_download_link
+    collect_video_urls,
+    extract_download_link
 )
 from helpers.crawler.anime_utils import (
-    extract_host_domain, extract_anime_name, get_episode_ids,
+    extract_host_domain,
+    extract_anime_name,
+    get_episode_ids,
     generate_episode_embed_urls
 )
-from helpers.progress_utils import create_progress_bar, create_progress_table
+
+from helpers.progress_utils import (
+    create_progress_bar,
+    create_progress_table
+)
 from helpers.general_utils import (
-    fetch_page, create_download_directory, clear_terminal
+    fetch_page,
+    create_download_directory,
+    clear_terminal
 )
 from helpers.download_utils import (
-    get_episode_filename, save_file_with_progress, run_in_parallel
+    get_episode_filename,
+    save_file_with_progress,
+    run_in_parallel
 )
 from helpers.config import prepare_headers
 
@@ -91,12 +102,8 @@ def process_embed_url(embed_url, download_path, task_info):
     """
     soup = fetch_page(embed_url)
     script_items = soup.find_all('script')
-    texts = [item.text for item in script_items]
-
-    for text in texts:
-        download_link = extract_download_link(text, embed_url)
-        if download_link:
-            download_episode(download_link, download_path, task_info)
+    download_link = extract_download_link(script_items, video_url)
+    download_episode(download_link, download_path, task_info)
 
 def download_anime(anime_name, video_urls, download_path):
     """
