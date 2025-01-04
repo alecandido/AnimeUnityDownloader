@@ -95,32 +95,28 @@ async def collect_video_urls(embed_urls):
     # Run all tasks concurrently and collect results
     return await asyncio.gather(*tasks)
 
-def extract_download_link(text, embed_url, match="window.downloadUrl = "):
+def extract_download_link(script_items, video_url):
     """
-    Extracts a download link from a JavaScript text by searching for a
-    specific match pattern.
+    Extracts the download URL from a list of script items.
 
     Args:
-        text (str): The text to search for the download URL.
-        embed_url (str): The embed URL to process.
-        match (str, optional): The pattern to search for in the text.
-                               Defaults to `window.downloadUrl = `.
+        script_items (list): A list of BeautifulSoup objects representing
+                             `<script>` tags.
+        video_url (str): The URL of the video page, used for logging purposes
+                         if extraction fails.
 
     Returns:
-        str: The extracted download URL if the pattern is found;
-             otherwise, `None`.
-
-    Raises:
-        IndexError: If the expected format of the text does not match the
-                    pattern or the URL cannot be extracted.
+        str: The extracted download URL if found.
+        None: If the download URL is not found in any of the provided script
+              items.
     """
-    if match in text:
-        try:
-            return text.split("'")[-2]
+    pattern = r"window\.downloadUrl\s*=\s*'(https?:\/\/[^\s']+)'"
 
-        except IndexError as indx_err:
-            raise IndexError(
-                f"Error extracting the download link for {embed_url}"
-            ) from indx_err
+    for item in script_items:
+        match = re.search(pattern, item.text)
+        if match:
+            return match.group(1)
 
+    # Return None if no download link is found
+    print(f"Error extracting the download link for {video_url}")
     return None
