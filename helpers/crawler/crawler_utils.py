@@ -3,14 +3,81 @@ This module provides functions to retrieve, extract, and process anime episode
 video URLs from a web page.
 """
 
+import re
 import random
 import asyncio
+from urllib.parse import urlparse
 
 import httpx
 
-from helpers.config import CRAWLER_WORKERS, prepare_headers
+from helpers.config import prepare_headers
 
 HEADERS = prepare_headers()
+
+def validate_url(url):
+    """
+    Validates a URL by ensuring it does not have a trailing slash.
+
+    Args:
+        url (str): The URL to validate and normalize.
+
+    Returns:
+        str: The normalized URL without a trailing slash.
+    """
+    if url.endswith('/'):
+        return url.rstrip('/')
+    return url
+
+def extract_host_domain(url):
+    """
+    Extracts the host/domain name from a given URL.
+
+    Args:
+        url (str): The URL from which the host/domain name will be extracted.
+
+    Returns:
+        str: The domain or host part of the URL.
+    """
+    parsed_url = urlparse(url)
+    return parsed_url.netloc
+
+def validate_episode_range(start_episode, end_episode, num_episodes):
+    """
+    Validates the episode range to ensure it is within acceptable bounds.
+
+    Args:
+        start_episode (int): The starting episode number.
+        end_episode (int): The ending episode number.
+        num_episodes (int): The total number of episodes available.
+
+    Returns:
+        tuple: A tuple containing the validated start and end episode numbers.
+               If either start_episode or end_episode is `None`, it will be
+               returned unchanged.
+
+    Raises:
+        ValueError: If the start episode is less than 1, greater than the total
+                    number of episodes, or if the start episode is greater than
+                    the end episode. Additionally, it raises an error if the
+                    end episode exceeds the total number of episodes.
+    """
+    if start_episode:
+        if start_episode < 1 or start_episode > num_episodes:
+            raise ValueError(
+                f"Start episode must be between 1 and {num_episodes}."
+            )
+
+    if start_episode and end_episode:
+        if start_episode > end_episode:
+            raise ValueError(
+                "Start episode cannot be greater than end episode."
+            )
+        if end_episode > num_episodes:
+            raise ValueError(
+                f"End episode must be between 1 and {num_episodes}."
+            )
+
+    return start_episode, end_episode
 
 async def fetch_with_retries(
     url, semaphore,
@@ -24,7 +91,6 @@ async def fetch_with_retries(
         semaphore (asyncio.Semaphore): Semaphore to control concurrency.
         headers (dict, optional): Headers to send with the request.
         params (dict, optional): Parameters to send with the request.
-        timeout (int, optional): Timeout for the request.
         retries (int, optional): Number of retries in case of failure.
 
     Returns:
@@ -55,45 +121,6 @@ async def fetch_with_retries(
                     return None
 
     return None
-
-async def get_video_url(embed_url, semaphore):
-    """
-    Fetch the video URL from an embed URL.
-
-    Args:
-        embed_url (str): The URL to retrieve the video from.
-        semaphore (asyncio.Semaphore): Semaphore to control concurrent access.
-
-    Returns:
-        str or None: The video URL as a string if the request is successful, 
-                     or None if the request fails or no URL is found.
-    """
-    response = await fetch_with_retries(embed_url, semaphore, headers=HEADERS)
-    if response:
-        return response.text.strip()
-
-    return None
-
-async def collect_video_urls(embed_urls):
-    """
-    Collects a list of video URLs by concurrently fetching each embed URL using
-    a thread pool.
-
-    Args:
-        embed_urls (list): A list of embed URLs to fetch video URLs from.
-
-    Returns:
-        list: A list of video URLs obtained from the provided embed URLs.
-    """
-    semaphore = asyncio.Semaphore(CRAWLER_WORKERS)
-    tasks = []
-
-    # Generate tasks for asynchronous fetching
-    for embed_url in embed_urls:
-        tasks.append(get_video_url(embed_url, semaphore))
-
-    # Run all tasks concurrently and collect results
-    return await asyncio.gather(*tasks)
 
 def extract_download_link(script_items, video_url):
     """
