@@ -14,21 +14,15 @@ import os
 import time
 import argparse
 import asyncio
+import random
 
 import requests
 from rich.live import Live
 
-from helpers.crawler.crawler_utils import(
-    collect_video_urls,
-    extract_download_link
-)
-from helpers.crawler.anime_utils import (
-    extract_host_domain,
-    extract_anime_name,
-    get_episode_ids,
-    generate_episode_embed_urls
-)
+from helpers.crawler.crawler import Crawler
+from helpers.crawler.crawler_utils import extract_download_link
 
+from helpers.config import prepare_headers
 from helpers.progress_utils import (
     create_progress_bar,
     create_progress_table
@@ -43,11 +37,10 @@ from helpers.download_utils import (
     save_file_with_progress,
     run_in_parallel
 )
-from helpers.config import prepare_headers
 
 HEADERS = prepare_headers()
 
-def download_episode(download_link, download_path, task_info, timeout=10, retries=4):
+def download_episode(download_link, download_path, task_info, retries=4):
     """
     Downloads an episode from the specified link and provides real-time
     progress updates.
@@ -73,7 +66,7 @@ def download_episode(download_link, download_path, task_info, timeout=10, retrie
                 download_link,
                 stream=True,
                 headers=HEADERS,
-                timeout=timeout
+                timeout=10
             )
             response.raise_for_status()
 
@@ -88,19 +81,20 @@ def download_episode(download_link, download_path, task_info, timeout=10, retrie
 #                    f"HTTP request failed: {req_err}. "
 #                    f"Retrying in a moment... ({attempt + 1}/{retries})"
 #                )
-                time.sleep(30)
+                delay = 10 * (attempt + 1) + random.uniform(0, 2)
+                time.sleep(delay)
 
-def process_embed_url(embed_url, download_path, task_info):
+def process_video_url(video_url, download_path, task_info):
     """
     Processes an embed URL to extract episode download links and initiate their
     download.
 
     Args:
-        embed_url (str): The embed URL to process.
+        video_url (str): The embed URL to process.
         download_path (str): The path to save the downloaded episodes.
         task_info (tuple): A tuple containing progress tracking information.
     """
-    soup = fetch_page(embed_url)
+    soup = fetch_page(video_url)
     script_items = soup.find_all('script')
     download_link = extract_download_link(script_items, video_url)
     download_episode(download_link, download_path, task_info)
@@ -122,7 +116,8 @@ def download_anime(anime_name, video_urls, download_path):
 
     with Live(progress_table, refresh_per_second=10):
         run_in_parallel(
-            process_embed_url, video_urls, job_progress, download_path
+            process_video_url,
+            video_urls, job_progress, download_path
         )
 
 async def process_anime_download(url, start_episode=None, end_episode=None):
@@ -140,21 +135,17 @@ async def process_anime_download(url, start_episode=None, end_episode=None):
         ValueError: If there is an issue with extracting data from 
                     the anime page.
     """
-    host_domain = extract_host_domain(url)
     soup = fetch_page(url)
+    crawler = Crawler(
+        url=url,
+        start_episode=start_episode,
+        end_episode=end_episode
+    )
+    video_urls = await crawler.collect_video_urls()
 
     try:
-        anime_name = extract_anime_name(soup)
+        anime_name = crawler.extract_anime_name(soup)
         download_path = create_download_directory(anime_name)
-
-        episode_ids = await get_episode_ids(
-            url,
-            start_episode=start_episode,
-            end_episode=end_episode
-        )
-        embed_urls = generate_episode_embed_urls(host_domain, episode_ids)
-
-        video_urls = await collect_video_urls(embed_urls)
         download_anime(anime_name, video_urls, download_path)
 
     except ValueError as val_err:
