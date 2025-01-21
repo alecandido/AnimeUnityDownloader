@@ -90,6 +90,12 @@ python3 anime_downloader.py https://www.animeunity.so/anime/1517-yuru-yuri --sta
 ```
 In this case, the script will download all episodes starting from the `--start` episode to the last episode.
 
+To download episodes up to a certain episode:
+```bash
+python3 anime_downloader.py https://www.animeunity.so/anime/1517-yuru-yuri --end 10
+```
+In this case, the script will download all episodes starting from the first episode to the `--end` episode.
+
 ## Batch Download
 
 ### Usage
