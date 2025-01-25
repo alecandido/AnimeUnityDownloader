@@ -7,8 +7,8 @@
 ## Features
 
 - Downloads multiple episodes concurrently.
-- Supports batch downloading via a list of URLs.
-- Supports downloading a specified range of episodes.
+- Supports [batch downloading](https://github.com/Lysagxra/AnimeUnityDownloader?tab=readme-ov-file#batch-download) via a list of URLs.
+- Supports downloading a [specified range of episodes](https://github.com/Lysagxra/AnimeUnityDownloader?tab=readme-ov-file#single-anime-download).
 - Tracks download progress with a progress bar.
 - Automatically creates a directory structure for organized storage.
 
