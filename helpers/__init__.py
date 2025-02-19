@@ -1,7 +1,7 @@
-"""
-The `helpers` package provides utility modules and functions to support 
-the main application. These utilities include functions for downloading, 
-file management, URL handling, progress tracking, and more.
+"""Package provides utility modules and functions to support the main application.
+
+These utilities include functions for downloading, file management, URL handling,
+progress tracking, and more.
 
 Modules:
     - config: Constants and settings used across the project.
@@ -10,7 +10,7 @@ Modules:
     - general_utils: Miscellaneous utility functions.
     - progress_utils: Tools for progress tracking and reporting.
 
-This package is designed to be reusable and modular, allowing its components 
+This package is designed to be reusable and modular, allowing its components
 to be easily imported and used across different parts of the application.
 """
 
