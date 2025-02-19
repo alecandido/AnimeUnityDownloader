@@ -1,4 +1,5 @@
-"""
+"""Main module of the project.
+
 This module provides functionality to read URLs from a file, process
 them for downloading Anime content, and write results back to the file.
 
@@ -10,25 +11,20 @@ Usage:
 
 import asyncio
 
+from anime_downloader import process_anime_download
+from helpers.config import FILE
 from helpers.file_utils import read_file, write_file
 from helpers.general_utils import clear_terminal
-from helpers.config import FILE
 
-from anime_downloader import process_anime_download
 
-async def process_urls(urls):
-    """
-    Validates and downloads items for a list of URLs.
-
-    Args:
-        urls (list): A list of URLs to process.
-    """
+async def process_urls(urls: list[str]) -> None:
+    """Validate and downloads items for a list of URLs."""
     for url in urls:
         await process_anime_download(url)
 
-async def main():
-    """
-    Main function to execute the script.
+
+async def main() -> None:
+    """Run the script.
 
     Reads URLs from a file, processes them, and clears the file at the end.
     """
@@ -37,5 +33,6 @@ async def main():
     await process_urls(urls)
     write_file(FILE)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main())
