@@ -6,25 +6,28 @@ into a single location.
 
 from fake_useragent import UserAgent
 
-DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be
-                               # stored
-FILE = "URLs.txt"              # The name of the file containing URLs
+DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be stored.
+FILE = "URLs.txt"              # The name of the file containing URLs.
 
-TASK_COLOR = "cyan"            # The color to be used for task-related messages
-CRAWLER_WORKERS = 8            # The maximum number of worker threads for
-                               # crawling tasks
-DOWNLOAD_WORKERS = 3           # The maximum number of worker threads for
-                               # downloading tasks
+TASK_COLOR = "cyan"            # The color to be used for task-related messages.
+CRAWLER_WORKERS = 8            # The maximum number of worker threads for crawling
+                               # tasks.
+DOWNLOAD_WORKERS = 2           # The maximum number of worker threads for downloading
+                               # tasks.
 
+# Constants for file sizes, expressed in bytes.
 KB = 1024
 MB = 1024 * KB
 
+# Thresholds for file sizes and corresponding chunk sizes used during download.
+# Each tuple represents: (file size threshold, chunk size to download in that range).
 THRESHOLDS = [
     (50 * MB, 256 * KB),   # Less than 50 MB
     (100 * MB, 512 * KB),  # 50 MB to 100 MB
     (250 * MB, 2 * MB),    # 100 MB to 250 MB
 ]
 
+# Default chunk size for files larger than the largest threshold.
 LARGE_FILE_CHUNK_SIZE = 4 * MB
 
 # Creating a user-agent rotator
