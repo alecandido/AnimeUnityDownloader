@@ -22,13 +22,13 @@ MB = 1024 * KB
 # Thresholds for file sizes and corresponding chunk sizes used during download.
 # Each tuple represents: (file size threshold, chunk size to download in that range).
 THRESHOLDS = [
-    (50 * MB, 256 * KB),   # Less than 50 MB
-    (100 * MB, 512 * KB),  # 50 MB to 100 MB
-    (250 * MB, 2 * MB),    # 100 MB to 250 MB
+    (50 * MB, 128 * KB),   # Less than 50 MB
+    (100 * MB, 256 * KB),  # 50 MB to 100 MB
+    (250 * MB, 1 * MB),    # 100 MB to 250 MB
 ]
 
 # Default chunk size for files larger than the largest threshold.
-LARGE_FILE_CHUNK_SIZE = 4 * MB
+LARGE_FILE_CHUNK_SIZE = 2 * MB
 
 # Creating a user-agent rotator
 USER_AGENT_ROTATOR = UserAgent(use_external_data=True)
