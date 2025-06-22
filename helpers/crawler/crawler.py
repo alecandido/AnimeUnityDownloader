@@ -3,6 +3,7 @@
 Utilities functions to crawl anime websites, retrieve episode information, and collect
 video URLs for each episode.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -18,6 +19,7 @@ from helpers.config import (
 )
 
 from .crawler_utils import (
+    episode_in_range,
     extract_host_domain,
     fetch_with_retries,
     validate_episode_range,
@@ -28,6 +30,7 @@ if TYPE_CHECKING:
     from requests import BeautifulSoup
 
 HEADERS = prepare_headers()
+
 
 class Crawler:
     """class responsible for crawling an anime.
@@ -101,12 +104,12 @@ class Crawler:
         logging.error("URL format is incorrect.")
         return None
 
-    async def _get_episode_id(self, episode_indx: int) -> str | None:
-        """Fetch the ID of the specified episode from an API."""
-        episode_api_url = f"{self.api_url}/{episode_indx}"
+    async def _get_episode_ids(self) -> list[tuple[int, str]] | None:
+        """Fetch the IDs of all the episodes from an API."""
+        episode_api_url = f"{self.api_url}/0"
         params = {
-            "start_range": episode_indx,
-            "end_range": episode_indx + 1,
+            "start_range": 0,
+            "end_range": self.num_episodes + 1,
         }
 
         response = await fetch_with_retries(
@@ -117,26 +120,24 @@ class Crawler:
         )
         if response:
             episode_info = response.json().get("episodes", [])
-            return episode_info[-1]["id"] if episode_info else None
+            return (
+                [(ep["id"], ep["number"]) for ep in episode_info]
+                if episode_info
+                else None
+            )
 
         return None
 
-    async def _collect_episode_ids(self) -> list[str]:
+    async def _collect_episode_ids(self) -> list[int]:
         """Retrieve a list of episode IDs from a given URL."""
-        start_episode, end_episode = validate_episode_range(
-            self.start_episode,
-            self.end_episode,
-            self.num_episodes,
-        )
+        validate_episode_range(self.start_episode, self.end_episode, self.num_episodes)
 
-        start_index = start_episode - 1 if start_episode else 0
-        end_index = end_episode if end_episode else self.num_episodes
-
-        tasks = [
-            self._get_episode_id(episode_indx)
-            for episode_indx in range(start_index, end_index)
+        episodes = await self._get_episode_ids()
+        return [
+            ep[0]
+            for ep in episodes
+            if episode_in_range(ep[1], self.start_episode, self.end_episode)
         ]
-        return await asyncio.gather(*tasks)
 
     def _generate_episode_embed_urls(self, episode_ids: str) -> list[str]:
         """Generate a list of embed URLs for a series of episodes."""
