@@ -12,6 +12,7 @@ import random
 import re
 import sys
 from asyncio import Semaphore
+from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -38,7 +39,7 @@ def validate_episode_range(
     start_episode: int | None,
     end_episode: int | None,
     num_episodes: int,
-) -> tuple:
+) -> None:
     """Validate the episode range to ensure it is within acceptable bounds."""
 
     def log_and_exit(message: str) -> None:
@@ -55,7 +56,25 @@ def validate_episode_range(
         if end_episode > num_episodes:
             log_and_exit(f"End episode must be between 1 and {num_episodes}.")
 
-    return start_episode, end_episode
+
+def episode_in_range(num: str, start: Optional[int], end: Optional[int]) -> bool:
+    """Check if episode number is within the specified range.
+
+    The range is intended to be inclusive.
+
+    If the episode number is impossible to compare as a float, it is arbitrarily
+    included (assuming that the range specification is used just to exclude, thus the
+    default is "all included").
+    """
+
+    try:
+        n = float(num)
+    except ValueError:
+        return True
+
+    return (n >= start if start is not None else True) and (
+        n <= end if end is not None else True
+    )
 
 
 async def fetch_with_retries(
@@ -81,7 +100,7 @@ async def fetch_with_retries(
 
                 except httpx.HTTPStatusError:
                     if attempt < retries - 1:
-                        delay = 2 ** attempt + random.uniform(0, 2)  # noqa: S311
+                        delay = 2**attempt + random.uniform(0, 2)  # noqa: S311
                         await asyncio.sleep(delay)
 
                 except httpx.RequestError as req_err:
